@@ -37,46 +37,44 @@ func main() {
 	accessToken := os.Getenv("ACCESS_TOKEN")
 
 	if accessToken == "" {
-		fmt.Print("access token is not specified")
+		panic(fmt.Sprint("access token is not specified"))
 	}
 
+	// request
 	resp, err := graph("/10150149727825637/feed", accessToken)
-
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		panic(fmt.Sprintf("%s\n", err))
 	}
-
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
 
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		panic(fmt.Sprintf("%s\n", err))
 	}
 
+	// parse
 	var data graphResponse
 	err = json.Unmarshal(body, &data)
-
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		panic(fmt.Sprintf("%s\n", err))
 	}
-
 	for _, feed := range data.Data {
 		fmt.Printf("%s\n", feed.Id)
 	}
 
+	// get db connection
 	db, err := sql.Open("postgres", "user=postgres dbname=mycrawler")
-
+	if err != nil {
+		panic(fmt.Sprintf("%s\n", err))
+	}
 	defer db.Close()
 
-	if err != nil {
-		fmt.Printf("%s\n", err)
-	}
-
+	// bulk insert
 	query := "insert into feeds (id) values ($1)"
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		panic(fmt.Sprintf("%s\n", err))
 	}
 
 	for _, feed := range data.Data {
