@@ -4,34 +4,12 @@ import (
 	_ "github.com/lib/pq"
 
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 )
 
-const (
-	graphUrl string = "https://graph.facebook.com"
-)
-
-type paging struct {
-	Previous string `json:"previous"`
-	Next     string `json:"next"`
-}
-
-type feed struct {
-	Id string `json:"id"`
-}
-
-type graphResponse struct {
-	Data []feed `json:"data"`
-	Paging paging `json:"paging"`
-}
-
-func graph(path string, accessToken string) (resp *http.Response, err error) {
-	return http.Get(graphUrl + path + "?access_token=" + accessToken)
-}
+// Graph api url.
+const graphUrl string = "https://graph.facebook.com"
 
 func main() {
 	accessToken := os.Getenv("ACCESS_TOKEN")
@@ -40,24 +18,13 @@ func main() {
 		panic(fmt.Sprint("access token is not specified"))
 	}
 
-	// request
-	resp, err := graph("/10150149727825637/feed", accessToken)
-	if err != nil {
-		panic(fmt.Sprintf("%s\n", err))
-	}
-	defer resp.Body.Close()
+	client := &GraphClient{graphUrl, accessToken}
+	data, err := client.Get("/10150149727825637/feed")
 
-	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		panic(fmt.Sprintf("%s\n", err))
 	}
 
-	// parse
-	var data graphResponse
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		panic(fmt.Sprintf("%s\n", err))
-	}
 	for _, feed := range data.Data {
 		fmt.Printf("%s\n", feed.Id)
 	}
